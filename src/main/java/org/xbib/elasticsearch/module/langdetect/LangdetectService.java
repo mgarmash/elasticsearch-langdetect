@@ -51,6 +51,7 @@ public class LangdetectService extends AbstractLifecycleComponent<LangdetectServ
             "id",
             "it",
             "ja",
+            "kk",
            // "kn",
             "ko",
             "lt",
@@ -119,7 +120,7 @@ public class LangdetectService extends AbstractLifecycleComponent<LangdetectServ
     }
 
     @Override
-    protected void doStart() throws ElasticsearchException {
+    protected synchronized void doStart() throws ElasticsearchException {
         load(settings);
         init();
     }
@@ -218,7 +219,7 @@ public class LangdetectService extends AbstractLifecycleComponent<LangdetectServ
         }
     }
 
-    public void setProfile(String profile) throws LanguageDetectionException {
+    public synchronized void setProfile(String profile) throws LanguageDetectionException {
         this.profile = profile;
         langlist.clear();
         load(settings);
@@ -230,9 +231,11 @@ public class LangdetectService extends AbstractLifecycleComponent<LangdetectServ
     }
 
     public List<Language> detectAll(String text) throws LanguageDetectionException {
-        if (!isStarted) {
-            load(settings);
-            init();
+        synchronized (this) {
+            if (!isStarted) {
+                load(settings);
+                init();
+            }
         }
         List<Language> languages = new ArrayList<>();
         if (filterPattern != null && !filterPattern.matcher(text).matches()) {
